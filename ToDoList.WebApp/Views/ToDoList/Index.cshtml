@@ -1,0 +1,244 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<br />
+<div class="row">
+    <section class="col-md-12 col-md-push-0">
+        <section>
+            <div class="well bs-component">
+                <div class="row">
+                    <div>
+                        <div class="table-toolbar">
+                            <button type="button" class="btn btn-primary" onclick="create()" style="min-width:100px">@Resources.Resource.ButtonAdd</button>
+                        </div>
+                        <br />
+                        <table id="grid" class="table table-striped table-bordered table-hover" cellspacing="0" align="center" width="100%">
+                            <thead>
+                                <tr>
+                                    <th>@Resources.Resource.ToDoList_GridColumn_No</th>
+                                    <th>@Resources.Resource.ToDoList_GridColumn_ToDoTitle</th>
+                                    <th>@Resources.Resource.ToDoList_GridColumn_Actions</th>
+                                </tr>
+                            </thead>
+                        </table>
+
+                        <div id="popupModal" class="modal fade">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div id="popupModalBodyDiv" class="modal-body">
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </section>
+</div>
+
+
+@section scripts{
+    <script>
+        $(document).ready(function () {
+            //show loader
+            //showLoading();
+            //initial grid
+            var grid = $('#grid').DataTable({
+                "scrollY": "250px",
+                "scrollCollapse": true,
+                "columnDefs": [
+                    {
+                        //column grid no
+                        "width": "5%",
+                        "searchable": false,
+                        "orderable": false,
+                        "targets": [0]
+                    },
+                    {
+                        "className": "text-center custom-middle-align",
+                        "targets": [0, 1]
+                    },],
+                "language": {
+                    "emptyTable": "@Resources.Resource.NoRecord",
+                    "processing":
+                        '<i class="fa fa-spinner fa-spin fa-3x fa-fw" style="color:#2a2b2b;"></i><span class="sr-only">'+'@Resources.Resource.Loading'+'</span> '
+                },
+                "processing": true,
+                "serverSide": true,
+                "ajax": {
+                    "url": "/ToDoList/GetGridView",
+                    "type": "POST",
+                    "dataType": "JSON",
+                },
+                "columns": [
+                    {
+                        "data": "ToDoId"
+                    },
+                    {
+                        "data": "ToDoTitle",
+                        "autoWidth": true,
+                        "searchable": true
+                    },
+                    {
+                        //action column
+                        "data": null, render: function (data, type, row) {
+                            var actions = "";
+                            actions += (!data.IsDone) ? "<button type='button' class='btn btn-secondary rowBtn' onclick='edit(" + data.ToDoId + ")'>" + '@Resources.Resource.ButtonEdit' + "</button>" : "";
+                            actions += "<button type='button' class='btn btn-danger rowBtn' onclick='deleteRecord(" + data.ToDoId + ")'>" + '@Resources.Resource.ButtonDelete' + "</button>";
+                            actions += (!data.IsDone) ? "<button type='button' class='btn btn-default rowBtn' onclick='markDone(" + data.ToDoId + ")'>" + '@Resources.Resource.ButtonMarkDone' + "</button>" : "";
+                            return actions;
+                        },
+                        width: "30%"
+                    }
+                ],
+                "createdRow": function (row, data, dataIndex) {
+                    //on each grid row drawn
+                    if (data.IsDone) {
+                        $(row).addClass('doneRow');
+                    }
+                }
+            });
+
+            ////on grid order, search
+            //grid.on('order.dt search.dt', function () {
+            //    console.log('set row index');
+            //    //draw (record no) grid column
+            //    grid.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+            //        cell.innerHTML = i + 1;
+            //        console.log(i+1);
+            //    });
+            //}).draw();
+
+            //on grid after bind
+            grid.on('draw.dt', function () {
+                //after grid bind
+                var pageInfo = grid.page.info();
+                var pageIndex = pageInfo.page;
+                var pageSize = pageInfo.length;
+                //draw (record no) grid column
+                grid.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+                    cell.innerHTML = (pageIndex * pageSize) + (i + 1);
+                });
+                //hide loader
+                hideLoading();
+            });
+        });
+
+        var create = function () {
+            //show loader
+            showLoading();
+            var url = "/ToDoList/Create";
+            //open popup (Create)
+            $("#popupModalBodyDiv").load(url, function () {
+                $("#popupModal").modal("show");
+            });
+        }
+
+        var edit = function (id) {
+            //show loader
+            showLoading();
+            var url = "/ToDoList/Edit/" + id;
+            //open popup (Edit)
+            $("#popupModalBodyDiv").load(url, function () {
+                $("#popupModal").modal("show");
+            });
+        }
+
+        var deleteRecord = function (id) {
+            //show confirm message
+            swal({
+                title: '@Resources.Resource.DeleteConfirmDialogHeader',
+                text: '@Resources.Resource.DeleteConfirmDialogBody',
+                type: "warning",
+                showCancelButton: true,
+                confirmButtonClass: 'btn-danger',
+                confirmButtonText: '@Resources.Resource.DeleteConfirmActionButton',
+                closeOnConfirm: false
+            }, function () {
+                //on delete confirm
+                //show loader
+                showLoading();
+                //ajax call (delete)
+                $.ajax({
+                    type: "GET",
+                    url: "/ToDoList/Delete/" + id,
+                    success: function (result) {
+                        //hide loader
+                        hideLoading();
+                        var alertType = (result.Status == 1) ? "success" : "error";
+                        //show alert message
+                        swal({
+                            title: '',
+                            text: result.Message,
+                            type: alertType,
+                            showCancelButton: false,
+                            confirmButtonText: '@Resources.Resource.ButtonOk',
+                            closeOnConfirm: false
+                        }, function () {
+                            window.location.href = "/ToDoList/Index";
+                        });
+                    },
+                    error: function (result) {
+                        //hide loader
+                        hideLoading();
+                        //show error message
+                        swal({
+                            title: '',
+                            text: '@Resources.Validation.ErrorMsg_FailedOperation',
+                            type: 'error',
+                            showCancelButton: false,
+                            confirmButtonText: '@Resources.Resource.ButtonOk',
+                            closeOnConfirm: false
+                        });
+                    }
+                });//end ajax
+            });
+        }
+
+        var markDone = function (id) {
+            //show loader
+            showLoading();
+            //ajax call
+            $.ajax({
+                type: "GET",
+                url: "/ToDoList/MarkDone/" + id,
+                success: function (result) {
+                    //hide loader
+                    hideLoading();
+                    var alertType = (result.Status == 1) ? "success" : "error"
+                    //show alert message
+                    swal({
+                        title: '',
+                        text: result.Message,
+                        type: alertType,
+                        showCancelButton: false,
+                        confirmButtonText: '@Resources.Resource.ButtonOk',
+                        closeOnConfirm: false
+                    }, function () {
+                        window.location.href = "/ToDoList/Index";
+                    });
+                },
+                error: function (result) {
+                    //hide loader
+                    hideLoading();
+                    //show error message
+                    swal({
+                        title: '',
+                        text: '@Resources.Validation.ErrorMsg_FailedOperation',
+                        type: 'error',
+                        showCancelButton: false,
+                        confirmButtonText: '@Resources.Resource.ButtonOk',
+                        closeOnConfirm: false
+                    });
+                }
+            });//end ajax
+        }
+
+    </script>
+    
+}

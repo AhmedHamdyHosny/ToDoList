@@ -1,0 +1,120 @@
+﻿@model ToDoList.Models.ToDoEditModel
+@using Newtonsoft.Json;
+@{
+    ViewBag.Title = "Edit";
+    Layout = "~/Views/Shared/_Popup.cshtml";
+}
+
+<div class="modal-header">
+    <div class="widget-buttons pull-right">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <h2 class="modal-title">@Resources.Resource.ToDoList_Edit</h2>
+</div>
+
+@using (Html.BeginForm(null, null, FormMethod.Post, new { id = "form" }))
+{
+    <div class="modal-body">
+        @Html.AntiForgeryToken()
+        <div>
+            @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+            <div class="row">
+                <div class="col-xs-6 form-group">
+                    @Html.LabelFor(model => model.Item.ToDoTitle, Resources.Resource.ToDoTitle, htmlAttributes: new { @class = "text-info" })
+                    @Html.EditorFor(model => model.Item.ToDoTitle, new { htmlAttributes = new { @class = "form-control", @autocomplete = "off" } })
+                    @Html.ValidationMessageFor(model => model.Item.ToDoTitle, "", new { @class = "text-danger", @id = "ToDoTitle_Validation" })
+                </div>
+                <div class="col-xs-6 form-group">
+                    @Html.LabelFor(model => model.Item.DueDate, Resources.Resource.DueDate, htmlAttributes: new { @class = "text-info" })
+                    @Html.TextBoxFor(model => model.Item.DueDate, "{0:yyyy-MM-dd}", new { @class = "form-control datepicker", @type = "date" })
+                    @Html.ValidationMessageFor(model => model.Item.DueDate, "", new { @class = "text-danger", @id = "DueDate_Validation" })
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <input type="submit" value="@Resources.Resource.ButtonSave" class="btn btn-success" />
+        <button class="btn btn-default" type="button" data-dismiss="modal">@Resources.Resource.ButtonCancel</button>
+    </div>
+}
+
+@section scripts{
+    <script>
+        $(document).ready(function () {
+            //set min date
+            setMinDate();
+            //hide loader
+            hideLoading();
+            //get bind model
+            var model = @Html.Raw(JsonConvert.SerializeObject(Model.Item));
+            //on form submit
+            $("#form").on("submit", function (event) {
+                event.preventDefault();
+
+                var valid = true;
+                //bind model
+                model.ToDoTitle = $("input[name='Item.ToDoTitle']").val();
+                model.DueDate = $("input[name='Item.DueDate']").val();
+                valid = valid && $("#form").valid();
+                if (valid) {
+                    //show loader
+                    showLoading();
+                    //ajax call
+                    $.ajax({
+                        type: "POST",
+                        url: "/ToDoList/Edit",
+                        data: model,
+                        success: function (result) {
+                            //hide loader
+                            hideLoading();
+                            $("#popupModal").modal("hide");
+                            var alertType = (result.Status == 1) ? "success" : "error";
+                            //show alert message
+                            swal({
+                                title: '',
+                                text: result.Message,
+                                type: alertType,
+                                showCancelButton: false,
+                                confirmButtonText: '@Resources.Resource.ButtonOk',
+                                closeOnConfirm: false
+                            }, function () {
+                                //redirect to index
+                                window.location.href = "/ToDoList/Index";
+                            });
+                        },
+                        error: function (result) {
+                            //hide loader
+                            hideLoading();
+                            swal({
+                                title: '',
+                                text: '@Resources.Validation.ErrorMsg_FailedOperation',
+                                type: 'error',
+                                showCancelButton: false,
+                                confirmButtonText: '@Resources.Resource.ButtonOk',
+                                closeOnConfirm: false
+                            });
+                        }
+                    });//end ajax call
+                }
+            });//end on form submit
+
+            //set min date function
+            function setMinDate() {
+                var today = new Date();
+                var dd = today.getDate();
+                var mm = today.getMonth() + 1;
+                var yyyy = today.getFullYear();
+                if (dd < 10) {
+                    dd = '0' + dd
+                }
+                if (mm < 10) {
+                    mm = '0' + mm
+                }
+                today = yyyy + '-' + mm + '-' + dd;
+                $("input[name='Item.DueDate']").attr("min", today);
+            }
+        });
+    </script>
+}

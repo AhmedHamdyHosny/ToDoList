@@ -1,0 +1,17 @@
+﻿@using Microsoft.AspNet.Identity
+@if (Request.IsAuthenticated)
+{
+    using (Html.BeginForm("SignOut", "Account", FormMethod.Post, new { id = "signOutForm", @class = "navbar-right" }))
+    {
+    @Html.AntiForgeryToken()
+
+    <ul class="nav navbar-nav navbar-right">
+        <li>
+            <a href="javascript:void(0);">@(((System.Security.Claims.ClaimsIdentity)User.Identity).FindFirst("UserFullName").Value)</a>
+        </li>
+        <li><a href="javascript:void(0);" id="signOut">@Resources.Resource.SignOut</a></li>
+    </ul>
+    }
+}
+
+

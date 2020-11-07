@@ -1,0 +1,95 @@
+﻿@model ToDoList.WebApp.Models.AccountLoginViewModel
+@{
+    ViewBag.Title = Resources.Resource.Login;
+    Layout = "~/Views/Shared/_Empty.cshtml";
+}
+
+<link href="~/Content/css/account.css" rel="stylesheet" />
+
+<div class="container">
+    <div class="row">
+        <div class="col-sm-6 col-md-4 col-md-offset-4">
+            <h4 class="text-center login-title">@Resources.Resource.SignIn</h4>
+            <div class="account-wall">
+                <p id="loginAlert" class="text-danger text-center"></p>
+                @using (Html.BeginForm(null, null, FormMethod.Post, new { id = "form", @class = "form-signin" }))
+                {
+                    <div class="form-group input-group">
+                        <span class="input-group-addon"><i class="fa fa-user"></i></span>
+                        @Html.EditorFor(model => model.Email, new { htmlAttributes = new { @class = "form-control", @placeholder = Resources.Resource.Email } })
+                    </div>
+                    <div class="form-group input-group">
+                        <span class="input-group-addon"><i class="fa fa-lock"></i></span>
+                        @Html.EditorFor(model => model.Password, new { htmlAttributes = new { @class = "form-control", @placeholder = Resources.Resource.Password } })
+                    </div>
+                    <button class="btn btn-lg btn-primary btn-block" type="submit"> @Resources.Resource.ButtonLogin </button>
+                    <div class="form-check rememberMeCheck">
+                        <input type="checkbox" class="form-check-input" id="exampleCheck1">
+                        <label class="form-check-label" for="exampleCheck1">@Resources.Resource.RememberMe</label>
+                    </div>
+                }
+                <a href="/Account/Register" class="text-center new-account">@Resources.Resource.CreateNewAccount</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section scripts{
+    <script>
+        hideLoading();
+        $(document).ready(function () {
+            //for test 
+            $("#Email").val('admin@simsim.com');
+            $("#Password").val('123@Ahmed');
+
+            //check saved data in session storage
+            var username = sessionStorage.getItem("username");
+            var password = sessionStorage.getItem("password");
+
+            if (username != null && password != null) {
+                //bind user
+                $("#Email").val(username);
+                $("#Password").val(password);
+                sessionStorage.removeItem("username");
+                sessionStorage.removeItem("password");
+            }
+
+            //login
+            $("#form").on("submit", function (event) {
+                event.preventDefault();
+                var errorMsg = '@Resources.Validation.ErrorMsg_LoginFail';
+                var model = {};
+                model.Email = $('#Email').val();
+                model.Password = $('#Password').val();
+                if (model.Email != "" && model.Password != "") {
+                    //show loader
+                    showLoading();
+                    //ajax call
+                    $.ajax({
+                        type: "POST",
+                        url: "/Account/Login",
+                        data: model,
+                        success: function (result) {
+                            //hide loader
+                            hideLoading();
+                            if (result.Status == 1) {
+                                //redirect to ToDoList
+                                window.location.href = "/ToDoList/Index";
+                            } else {
+                                $('#loginAlert').text(result.Message);
+                            }
+                        },
+                        error: function (result) {
+                            //hide loader
+                            hideLoading();
+                            $('#loginAlert').text(result.Message);
+                        }
+                    })//end ajax
+                } else {
+                    $('#loginAlert').text(errorMsg);
+                }
+            });//end form submit
+        });
+    </script>
+}

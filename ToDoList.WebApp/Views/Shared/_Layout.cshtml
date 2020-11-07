@@ -1,0 +1,103 @@
+﻿@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewBag.Title</title>
+    @Styles.Render("~/Content/css")
+    @Scripts.Render("~/bundles/modernizr")
+    @Styles.Render("~/Content/datatables")
+    @Styles.Render("~/Content/sweetAlert")
+
+</head>
+<body>
+
+    <div class="loading-container" id="loadingContainer">
+        <div class="loader">
+        </div>
+    </div>
+
+    <div class="navbar navbar-inverse navbar-fixed-top">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                    <span class="icon-bar"></span>
+                </button>
+            </div>
+            <div class="navbar-collapse collapse">
+                <ul class="nav navbar-nav">
+                    <li>@Html.ActionLink(Resources.Resource.Home, "Index", "ToDoList")</li>
+                </ul>
+                @Html.Partial("_LoginPartial")
+            </div>
+        </div>
+    </div>
+    <div class="container body-content">
+        @RenderBody()
+        <hr />
+        <footer>
+            <p>&copy; @DateTime.Now.Year - ToDoList Web Application - By Ahmed Abdo</p>
+        </footer>
+    </div>
+    <!--Basic Scripts-->
+    @Scripts.Render("~/bundles/jquery")
+    @Scripts.Render("~/bundles/bootstrap")
+    @Scripts.Render("~/bundles/datatables")
+    @Scripts.Render("~/bundles/sweetAlert")
+    @Scripts.Render("~/bundles/custom")
+    <!--Page Related Scripts-->
+    
+<script>
+    $(document).ready(function () {
+        $("#signOut").click(function () {
+            //show loader
+            showLoading();
+            //ajax call
+            $.ajax({
+                type: "POST",
+                url: "/Account/SignOut",
+                success: function (result) {
+                    if (result.Status == 1) {
+                        //redirect to Login
+                        window.location.href = result.RedirectTo;
+                    } else {
+                        //hide loader
+                        hideLoading();
+                        //show error alert message
+                        swal({
+                            title: '',
+                            text: result.Message,
+                            type: 'error',
+                            showCancelButton: false,
+                            confirmButtonText: '@Resources.Resource.ButtonOk',
+                            closeOnConfirm: false
+                        });
+                    }
+                },
+                error: function (result) {
+                    //hide loader
+                    hideLoading();
+                    //show error alert message
+                    swal({
+                        title: '',
+                        text: '@Resources.Validation.ErrorMsg_FailedSignOut',
+                        type: 'error',
+                        showCancelButton: false,
+                        confirmButtonText: '@Resources.Resource.ButtonOk',
+                        closeOnConfirm: false
+                    });
+                }
+            })//end ajax
+        });
+    });
+
+</script>
+
+    @RenderSection("scripts", required: false)
+</body>
+</html>
+
